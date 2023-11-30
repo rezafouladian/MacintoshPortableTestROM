@@ -60,7 +60,7 @@ RAMFind:
     bne.s   .RAMFail
 .ContinueLoop:
     add.l   #$100000,A0
-    lsr.b   D2                          ; Shift bit
+    lsl.b   D2                          ; Shift bit
     dbf     D1,.CheckExpansionRAM       ; Loop until finished
     bra.s   .Done
 .PermRAMFail:
