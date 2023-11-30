@@ -2,6 +2,7 @@ TROMCode        EQU $55AAAA55           ; Test ROM constant
 ROMBase         EQU $D00000
 DebugOutput     EQU $C00000             ; Serial debug interface
 BacklightType   EQU $FC0200
+DebugROMVer     EQU $00
 
     org     $00000                      ; Start ROM at $0, translated to $D00000 by select logic
 
@@ -14,6 +15,7 @@ ROMEntryB:
     move.b  #$01,DebugOutput            ; Message $01: "Resuming from sleep passed startup tests"
 StartCode:
     move.b  #$02,DebugOutput            ; Message $02: Display greeting
+    move.b  #DebugROMVer,DebugOutput    ; Greeting is immediately followed by ROM version
     ; Check which model we are on by checking the backlight value
 DetectPortable:
     cmpi.b  #$A3,BacklightType          ; Check for upgraded Portable
