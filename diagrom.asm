@@ -46,8 +46,8 @@ RAMFind:
     move.b  #9-1,D1                     ; Setup loop counter to test all 9MB
 .LoadTestValues:
     move.l  #MemFindConst+A0,(A0)
-    add.l   #$100000,A0
-    dbf     D1,.LoadTestValues
+    add.l   #$100000,A0                 ; Go to the next MB of RAM
+    dbf     D1,.LoadTestValues          ; Loop until finished
 .CheckValues:
     cmpi.l  #MemFindConst+MemFindStConst,MemFindStConst ; Check permanent RAM first
     bne.s   .PermRAMFail
@@ -61,17 +61,17 @@ RAMFind:
 .ContinueLoop:
     add.l   #$100000,A0
     lsr.b   D2                          ; Shift bit
-    dbf     D1,.CheckExpansionRAM
+    dbf     D1,.CheckExpansionRAM       ; Loop until finished
     bra.s   .Done
 .PermRAMFail:
     move.b  #$07,DebugOutput            ; Message #$07: "Error: Permanent RAM check test failed"
     bra.s   .LoopSetup
 .RAMFail:
     andi.b  #%11111110,D2               ; Mark bit as failed to indicate MB
-    bra.s   .ContinueLoop
+    bra.s   .ContinueLoop               ; Go back to the test loop
 .Done:
     move.b  #$08,DebugOutput            ; Message #$08: RAM find results
-    move.b  D2,DebugOutput
+    move.b  D2,DebugOutput              ; Output bits of detected RAM, lsb = 9MB
 
 EntryVectors:
     org     $80000                      ; Place at $80000, translated to both $D80000 and $F80000,
