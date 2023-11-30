@@ -3,6 +3,8 @@ ROMBase         EQU $D00000
 DebugOutput     EQU $C00000             ; Serial debug interface
 BacklightType   EQU $FC0200
 DebugROMVer     EQU $00
+MemFindConst    EQU $C0000000
+MemFindStConst  EQU $A0000
 
     org     $00000                      ; Start ROM at $0, translated to $D00000 by select logic
 
@@ -16,6 +18,7 @@ ROMEntryB:
 StartCode:
     move.b  #$02,DebugOutput            ; Message $02: Display greeting
     move.b  #DebugROMVer,DebugOutput    ; Greeting is immediately followed by ROM version
+
     ; Check which model we are on by checking the backlight value
 DetectPortable:
     cmpi.b  #$A3,BacklightType          ; Check for upgraded Portable
@@ -37,6 +40,38 @@ DetectPortable:
 .RegularPortable:
     move.b  #$06,DebugOutput            ; Message #$06: "No backlight found, assuming Portable (M5120)"
 
+    ; Basic RAM check
+RAMFind:
+    move.l  #MemFindStConst,A0          ; Start testing at $0A0000
+    move.b  #9-1,D1                     ; Setup loop counter to test all 9MB
+.LoadTestValues:
+    move.l  #MemFindConst+A0,(A0)
+    add.l   #$100000,A0
+    dbf     D1,.LoadTestValues
+.CheckValues:
+    cmpi.l  #MemFindConst+MemFindStConst,MemFindStConst ; Check permanent RAM first
+    bne.s   .PermRAMFail
+.LoopSetup:
+    move.l  #$100000+MemFindStConst,A0  ; Start afer permanent RAM
+    move.b  #8-1,D1                     ; Setup loop counter to test 1MB-9MB
+.CheckExpansionRAM:
+    ori.b   #%00000001,D2               ; Assume good and change later
+    cmpi.l  #MemFindConst+A0,(A0)
+    bne.s   .RAMFail
+.ContinueLoop:
+    add.l   #$100000,A0
+    lsr.b   D2                          ; Shift bit
+    dbf     D1,.CheckExpansionRAM
+    bra.s   .Done
+.PermRAMFail:
+    move.b  #$07,DebugOutput            ; Message #$07: "Error: Permanent RAM check test failed"
+    bra.s   .LoopSetup
+.RAMFail:
+    andi.b  #%11111110,D2               ; Mark bit as failed to indicate MB
+    bra.s   .ContinueLoop
+.Done:
+    move.b  #$08,DebugOutput            ; Message #$08: RAM find results
+    move.b  D2,DebugOutput
 
 EntryVectors:
     org     $80000                      ; Place at $80000, translated to both $D80000 and $F80000,
