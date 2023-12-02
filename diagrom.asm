@@ -2,6 +2,7 @@ TROMCode        EQU $55AAAA55           ; Test ROM constant
 ROMBase         EQU $D00000
 DebugOutput     EQU $C00000             ; Serial debug interface
 BacklightType   EQU $FC0200
+ScreenBase      EQU $FA8000
 DebugROMVer     EQU $00
 MemFindConst    EQU $C0000000
 MemFindStConst  EQU $A0000
@@ -72,6 +73,14 @@ RAMFind:
 .Done:
     move.b  #$08,DebugOutput            ; Message #$08: RAM find results
     move.b  D2,DebugOutput              ; Output bits of detected RAM, lsb = 9MB
+
+BlackScreen:
+    moveq   #-1,D0                      ; We're going to fill the screen with FFFF FFFF
+    move.w  #(32000/4)-1,D1             ; Setup loop for screen size
+.ScreenLoop:
+    move.l  D0,(A0)+                    ; Put data on the screen
+    dbf     D1,.ScreenLoop              ; Loop until complete
+
 
 EntryVectors:
     org     $80000                      ; Place at $80000, translated to both $D80000 and $F80000,
