@@ -6,6 +6,7 @@ ScreenBase      EQU $FA8000
 DebugROMVer     EQU $00
 MemFindConst    EQU $C0000000
 MemFindStConst  EQU $A0000
+IconOffset      EQU $3956
 
     org     $00000                      ; Start ROM at $0, translated to $D00000 by select logic
 
@@ -41,7 +42,7 @@ DetectPortable:
 .RegularPortable:
     move.b  #$06,DebugOutput            ; Message #$06: "No backlight found, assuming Portable (M5120)"
 
-    ; Basic RAM check
+    ; Basic RAM size check
 RAMFind:
     move.l  #MemFindStConst,A0          ; Start testing at $0A0000
     move.b  #9-1,D1                     ; Setup loop counter to test all 9MB
@@ -60,7 +61,7 @@ RAMFind:
     cmpi.l  #MemFindConst+A0,(A0)
     bne.s   .RAMFail
 .ContinueLoop:
-    add.l   #$100000,A0
+    add.l   #$100000,A0                 ; Move forward 1MB
     lsl.b   D2                          ; Shift bit
     dbf     D1,.CheckExpansionRAM       ; Loop until finished
     bra.s   .Done
@@ -74,12 +75,41 @@ RAMFind:
     move.b  #$08,DebugOutput            ; Message #$08: RAM find results
     move.b  D2,DebugOutput              ; Output bits of detected RAM, lsb = 9MB
 
+EarlyInit:
+    move.b  #$09,DebugOutput            ; Message $09: Initial screen clearing
+.ClearScreen:
+    lea     .DrawInitIcon,A6
+    jmp     BlackScreen
+.DrawInitIcon:
+    move.b  #$0A,DebugOutput            ; Message $0A: Drawing icon on screen
+    lea     DiagIcon,A1                 ; Load address of the inital diag icon
+    movea.l IconOffset,A0               ; Load offset to near center of screen
+    lea     .PlayInitTone,A6
+    jmp     DrawIcon
+.PlayInitTone:
+    move.b  #$0B,DebugOutput            ; Message $0B: Playing test tone
+
+
+
+
 BlackScreen:
     moveq   #-1,D0                      ; We're going to fill the screen with FFFF FFFF
     move.w  #(32000/4)-1,D1             ; Setup loop for screen size
 .ScreenLoop:
     move.l  D0,(A0)+                    ; Put data on the screen
     dbf     D1,.ScreenLoop              ; Loop until complete
+    jmp     (A6)
+
+; Draw a bitmap on the screen
+;
+; A0 = Offset where to draw the icon
+; A1 = Icon to draw
+DrawIcon:
+    adda.l  ScreenBase,A0
+
+    jmp     (A6)
+DiagIcon:
+
 
 
 EntryVectors:
