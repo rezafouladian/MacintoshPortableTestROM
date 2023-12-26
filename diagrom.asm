@@ -8,17 +8,22 @@ MemFindConst    EQU $C0000000
 MemFindStConst  EQU $A0000
 IconOffset      EQU $3956
 
+MsgCold         EQU $00                 ; Message $00: "Starting from cold boot"
+MsgResume       EQU $01                 ; Message $01: "Resuming from sleep passed startup tests"
+MsgGreeting     EQU $02                 ; Message $02: Display greeting
+
+
     org     $00000                      ; Start ROM at $0, translated to $D00000 by select logic
 
     ; A1 = return address from system ROM
 
 ROMEntryA:
-    move.b  #$00,DebugOutput            ; Message $00: "Starting from cold boot"
+    move.b  #MsgCold,DebugOutput        ; Play cold boot message
     bra     StartCode
 ROMEntryB:
-    move.b  #$01,DebugOutput            ; Message $01: "Resuming from sleep passed startup tests"
+    move.b  #MsgResume,DebugOutput      ; Starting from sleep
 StartCode:
-    move.b  #$02,DebugOutput            ; Message $02: Display greeting
+    move.b  #MsgGreeting,DebugOutput    ; Play greeting
     move.b  #DebugROMVer,DebugOutput    ; Greeting is immediately followed by ROM version
 
     ; Check which model we are on by checking the backlight value
