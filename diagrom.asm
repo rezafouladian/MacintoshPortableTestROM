@@ -11,6 +11,8 @@ IconOffset      EQU $3956
 MsgCold         EQU $00                 ; Message $00: "Starting from cold boot"
 MsgResume       EQU $01                 ; Message $01: "Resuming from sleep passed startup tests"
 MsgGreeting     EQU $02                 ; Message $02: Display greeting
+MsgUpgradeID    EQU $03                 ; Message #$03: "Found a Portable (M5120) with backlight upgrade card"
+MsgBacklitID    EQU $04                 ; Message #$04: "Found a Backlit Portable (M5126)"
 
 
     org     $00000                      ; Start ROM at $0, translated to $D00000 by select logic
@@ -23,6 +25,7 @@ ROMEntryA:
 ROMEntryB:
     move.b  #MsgResume,DebugOutput      ; Starting from sleep
 StartCode:
+    ori     #$700,SR                    ; Mask out all interrupts
     move.b  #MsgGreeting,DebugOutput    ; Play greeting
     move.b  #DebugROMVer,DebugOutput    ; Greeting is immediately followed by ROM version
 
@@ -36,10 +39,10 @@ DetectPortable:
     beq     .PB100Found
     bra.s   .RegularPortable            ; Nothing found, must be a regular Portable
 .UpgradeFound:
-    move.b  #$03,DebugOutput            ; Message #$03: "Found a Portable (M5120) with backlight upgrade card"
+    move.b  #MsgUpgradeID,DebugOutput   ; Message #$03: "Found a Portable (M5120) with backlight upgrade card"
     bra.s   .Done                       
 .BacklitFound:
-    move.b  #$04,DebugOutput            ; Message #$04: "Found a Backlit Portable (M5126)"
+    move.b  #MsgBacklitID,DebugOutput   ; Message #$04: "Found a Backlit Portable (M5126)"
     bra.s   .Done
 .PB100Found:
     move.b  #$05,DebugOutput            ; Message #$05: "Found a Powerbook 100"
@@ -82,15 +85,13 @@ RAMFind:
 
 EarlyInit:
     move.b  #$09,DebugOutput            ; Message $09: Initial screen clearing
-.ClearScreen:
-    lea     .DrawInitIcon,A6
-    jmp     BlackScreen
+    bsr     BlackScreen
+    bsr     ClearScreen
 .DrawInitIcon:
     move.b  #$0A,DebugOutput            ; Message $0A: Drawing icon on screen
     lea     DiagIcon,A1                 ; Load address of the inital diag icon
     movea.l IconOffset,A0               ; Load offset to near center of screen
-    lea     .PlayInitTone,A6
-    jmp     DrawIcon
+    bsr     DrawIcon
 .PlayInitTone:
     move.b  #$0B,DebugOutput            ; Message $0B: Playing test tone
 
@@ -98,12 +99,22 @@ EarlyInit:
 
 
 BlackScreen:
+    lea     ScreenBase,A0               ; Load display address
     moveq   #-1,D0                      ; We're going to fill the screen with FFFF FFFF
     move.w  #(32000/4)-1,D1             ; Setup loop for screen size
 .ScreenLoop:
     move.l  D0,(A0)+                    ; Put data on the screen
     dbf     D1,.ScreenLoop              ; Loop until complete
-    jmp     (A6)
+    rts
+
+ClearScreen:
+    lea     ScreenBase,A0               ; Load display address
+    move.l  #(32000/4)-1,D1             ; Setup loop for screen size
+.ScreenLoop:
+    clr.l   (A0)+                       ; 
+    dbf     D1,.ScreenLoop              ; Loop until complete
+    rts
+
 
 ; Draw a bitmap on the screen
 ;
@@ -112,7 +123,7 @@ BlackScreen:
 DrawIcon:
     adda.l  ScreenBase,A0
 
-    jmp     (A6)
+    rts
 DiagIcon:
 
 
