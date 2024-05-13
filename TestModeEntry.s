@@ -42,15 +42,6 @@ ROMDisk2    EQU 0
         org     $F80000                 ; Cold start load location
         dc.l    TROMCode
         dc.l    ColdBoot
-        org     $F80080                 ; Warm start load location
-        dc.l    TROMCode
-        dc.l    WarmBoot
-ColdBoot:
-        move.l  #$D1A30ABC,D6
-        jmp     Setup
-WarmBoot:
-        move.l  #$D1A30123,D6
-        jmp     Setup
 Setup:
         bset.l  #beok,D7                ; Allow bus errors just in case
         lea     VIA_Base,A0
@@ -60,6 +51,15 @@ Setup:
         move.w  #$1001,D0
         move.l  #$F7000000,D1
         jmp     QuasiPwrMgr
+        org     $F80080                 ; Warm start load location
+        dc.l    TROMCode
+        dc.l    WarmBoot
+ColdBoot:
+        move.l  #$D1A30ABC,D6
+        jmp     Setup
+WarmBoot:
+        move.l  #$D1A30123,D6
+        jmp     Setup
 Setup2:
         lea     Sound_Base,A0
         lea     ErrorScreen,A6
