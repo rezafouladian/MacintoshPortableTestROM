@@ -18,7 +18,26 @@ timer           EQU     22
 test            EQU     26
 beok            EQU     27
 
+; Define options if not defined during build
+        IFND SmallROM
+SmallROM    EQU 0
+        ENDIF
+        IFND ROMDisk
+ROMDisk     EQU 0
+        ENDIF
+        IFND ROMDisk2
+ROMDisk2    EQU 0
+        ENDIF
+
+        IF ROMDisk
+        incbin  'ROMDisk.bin'
+        ENDIF
+
+        IFEQ ROMDisk                    ; If ROMDisk is not enabled
+        IFEQ SmallROM                   ; If the test ROM file should not have filler
         org     $F00000                 ; Dummy for proper sizing
+        ENDIF
+        ENDIF
 
         org     $F80000                 ; Cold start load location
         dc.l    TROMCode
@@ -121,4 +140,9 @@ Setup3:
         move.b  #$FF,(VIA_T2L-VIA_Base,A0)      ; Low byte
         move.b  #$FF,(VIA_T2H-VIA_Base,A0)      ; High byte
         jmp     TMEntry1
-        
+
+
+        IF ROMDisk2
+        org     $F90000                 ; Locate second ROM Disk at next 64k boundary
+        incbin  'ROMDisk2.bin'
+        ENDIF
